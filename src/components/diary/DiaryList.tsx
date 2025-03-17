@@ -1,3 +1,4 @@
+// 日记列表组件
 'use client'
 
 export function DiaryList() {

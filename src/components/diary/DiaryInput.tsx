@@ -1,3 +1,4 @@
+// 日记输入组件
 'use client'
 import { Plus } from "lucide-react"
 
