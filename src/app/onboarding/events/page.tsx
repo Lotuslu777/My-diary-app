@@ -1,9 +1,10 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { Send, ChevronLeft, Trophy, Sparkles } from 'lucide-react'
+import { Send, ChevronLeft, Trophy, Sparkles, Edit2, Trash2, X, Check } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { analyzeSuccessEvents } from '@/lib/ai'
+import { updateSuccessEvent, deleteSuccessEvent } from '@/lib/success-events'
 import toast from 'react-hot-toast'
 
 interface SuccessEvent {
@@ -27,6 +28,11 @@ export default function EventsPage() {
   const [currentEvent, setCurrentEvent] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  
+  // 编辑状态
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editText, setEditText] = useState('')
+  const [editCategory, setEditCategory] = useState<string | null>(null)
 
   // 加载已保存的成功事件
   useEffect(() => {
@@ -119,6 +125,76 @@ export default function EventsPage() {
     setSelectedCategory(prev => prev === categoryId ? null : categoryId)
   }
 
+  // 编辑功能
+  const handleEdit = (event: SuccessEvent) => {
+    setEditingId(event.id)
+    setEditText(event.content)
+    setEditCategory(event.category || null)
+  }
+
+  const handleCancelEdit = () => {
+    setEditingId(null)
+    setEditText('')
+    setEditCategory(null)
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editingId || !editText.trim()) return
+    setIsLoading(true)
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const updatedEvent = await updateSuccessEvent(editingId, user.id, {
+        content: editText.trim(),
+        category: editCategory
+      })
+
+      if (updatedEvent) {
+        setEvents(prev => prev.map(event => 
+          event.id === editingId ? updatedEvent : event
+        ))
+        toast.success('更新成功')
+      } else {
+        toast.error('更新失败')
+      }
+    } catch (error) {
+      console.error('更新失败:', error)
+      toast.error('更新失败，请重试')
+    } finally {
+      setEditingId(null)
+      setEditText('')
+      setEditCategory(null)
+      setIsLoading(false)
+    }
+  }
+
+  // 删除功能
+  const handleDelete = async (eventId: string) => {
+    if (!confirm('确定要删除这条记录吗？')) return
+    setIsLoading(true)
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const success = await deleteSuccessEvent(eventId, user.id)
+
+      if (success) {
+        setEvents(prev => prev.filter(event => event.id !== eventId))
+        toast.success('删除成功')
+      } else {
+        toast.error('删除失败')
+      }
+    } catch (error) {
+      console.error('删除失败:', error)
+      toast.error('删除失败，请重试')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   // 添加手动触发分析的函数
   const handleAnalyze = async () => {
     try {
@@ -198,9 +274,15 @@ export default function EventsPage() {
           {CATEGORIES.map(category => (
             <button
               key={category.id}
-              onClick={() => handleCategorySelect(category.id)}
+              onClick={() => {
+                if (editingId) {
+                  setEditCategory(prev => prev === category.id ? null : category.id)
+                } else {
+                  handleCategorySelect(category.id)
+                }
+              }}
               className={`px-4 py-2 rounded-full flex items-center gap-2 whitespace-nowrap transition-all
-                ${selectedCategory === category.id 
+                ${(editingId ? editCategory : selectedCategory) === category.id 
                   ? 'bg-primary text-white shadow-md' 
                   : 'bg-white text-gray-600 hover:bg-primary/5'}`}
             >
@@ -216,12 +298,60 @@ export default function EventsPage() {
         {events.map(event => (
           <div 
             key={event.id}
-            className="p-4 bg-white rounded-xl shadow-sm flex items-center gap-3"
+            className="p-4 bg-white rounded-xl shadow-sm"
           >
-            <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
-              {event.category ? CATEGORIES.find(c => c.id === event.category)?.icon : '✨'}
-            </div>
-            <p className="text-gray-700">{event.content}</p>
+            {editingId === event.id ? (
+              <div className="space-y-3">
+                <textarea
+                  value={editText}
+                  onChange={(e) => setEditText(e.target.value)}
+                  className="w-full p-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  rows={3}
+                  disabled={isLoading}
+                />
+                <div className="flex justify-end gap-2">
+                  <button
+                    onClick={handleCancelEdit}
+                    className="p-2 text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-100"
+                    disabled={isLoading}
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={handleSaveEdit}
+                    className="p-2 text-primary hover:text-primary/80 rounded-full hover:bg-primary/10"
+                    disabled={isLoading || !editText.trim()}
+                  >
+                    <Check className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                  {event.category ? CATEGORIES.find(c => c.id === event.category)?.icon : '✨'}
+                </div>
+                <div className="flex-1">
+                  <p className="text-gray-700">{event.content}</p>
+                </div>
+                <div className="flex gap-1 ml-2">
+                  <button
+                    onClick={() => handleEdit(event)}
+                    className="p-1.5 text-gray-400 hover:text-primary rounded-full hover:bg-gray-100"
+                    disabled={isLoading}
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(event.id)}
+                    className="p-1.5 text-gray-400 hover:text-red-500 rounded-full hover:bg-gray-100"
+                    disabled={isLoading}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -250,4 +380,4 @@ export default function EventsPage() {
       </div>
     </div>
   )
-} 
+}

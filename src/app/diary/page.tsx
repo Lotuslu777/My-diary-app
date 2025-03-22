@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
-import { Plus, Image as ImageIcon, Send, Calendar, Edit2, Trash2, X, Check, Sparkles } from 'lucide-react'
+import { Plus, Image as ImageIcon, Send, Calendar, Edit2, Trash2, X, Check, Sparkles, CalendarDays, Star, MessageSquare } from 'lucide-react'
 import DatePicker from 'react-datepicker'
 import "react-datepicker/dist/react-datepicker.css"
 import { getDiaryItemsByDate, createDiaryItem, uploadImage, updateDiaryItem, deleteDiaryItem, DiaryItem } from '@/lib/diary'
@@ -159,68 +159,75 @@ export default function DiaryPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-secondary">
-      {/* 顶部日历区域 */}
-      <div className="sticky top-0 bg-white/70 backdrop-blur-sm z-10 p-4 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            {/* 当前月日显示 */}
-            <div 
-              className="flex flex-col cursor-pointer hover:bg-primary/10 p-2 rounded-xl transition-colors relative"
-              onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
+    <div className="flex flex-col min-h-screen">
+      {/* 顶部导航栏 */}
+      <header className="sticky top-0 bg-white z-10 shadow-sm">
+        <div className="flex justify-between items-center p-4">
+          <h1 className="text-xl font-semibold text-gray-800">我的日记</h1>
+          <div className="flex gap-2">
+            <button
+              onClick={() => router.push('/chat')}
+              className="flex items-center gap-1 px-3 py-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors"
             >
-              <span className="text-sm text-primary/70 flex items-center gap-1">
-                {format(selectedDate, 'M月', { locale: zhCN })}
-                <Calendar className="w-4 h-4" />
-              </span>
-              <span className="text-3xl font-bold text-primary">
-                {format(selectedDate, 'd', { locale: zhCN })}
-              </span>
-              {isDatePickerOpen && (
-                <div className="absolute top-full left-0 mt-2 z-50">
-                  <DatePicker
-                    selected={selectedDate}
-                    onChange={(date: Date | null) => {
-                      if (date) handleDateChange(date)
-                    }}
-                    inline
-                    locale={zhCN}
-                    dateFormat="yyyy年MM月dd日"
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* 周视图 */}
-            <div className="flex-1 overflow-x-auto">
-              <div className="flex space-x-2">
-                {weekDates.map((date) => (
-                  <button
-                    key={date.toISOString()}
-                    onClick={() => setSelectedDate(date)}
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all
-                      ${date.toDateString() === selectedDate.toDateString() 
-                        ? 'bg-primary text-white shadow-md' 
-                        : 'text-gray-500 hover:bg-primary/10'}`}
-                  >
-                    {format(date, 'd')}
-                  </button>
-                ))}
+              <MessageSquare className="w-4 h-4" />
+              <span>AI助手</span>
+            </button>
+            <button
+              onClick={() => router.push('/onboarding/events')}
+              className="flex items-center gap-1 px-3 py-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors"
+            >
+              <Star className="w-4 h-4" />
+              <span>我的成功</span>
+            </button>
+          </div>
+        </div>
+        <div className="px-4 pb-4 flex items-center">
+          {/* 当前月日显示 */}
+          <div 
+            className="flex flex-col cursor-pointer hover:bg-primary/10 p-2 rounded-xl transition-colors relative"
+            onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
+          >
+            <span className="text-sm text-primary/70 flex items-center gap-1">
+              {format(selectedDate, 'M月', { locale: zhCN })}
+              <Calendar className="w-4 h-4" />
+            </span>
+            <span className="text-3xl font-bold text-primary">
+              {format(selectedDate, 'd', { locale: zhCN })}
+            </span>
+            {isDatePickerOpen && (
+              <div className="absolute top-full left-0 mt-2 z-50">
+                <DatePicker
+                  selected={selectedDate}
+                  onChange={(date: Date | null) => {
+                    if (date) handleDateChange(date)
+                  }}
+                  inline
+                  locale={zhCN}
+                  dateFormat="yyyy年MM月dd日"
+                />
               </div>
-            </div>
+            )}
           </div>
 
-          {/* 100件成功小事入口 */}
-          <button
-            onClick={handleGoToSuccessEvents}
-            className="flex items-center gap-2 px-4 py-2 bg-primary/5 hover:bg-primary/10 text-primary rounded-full transition-colors"
-            title="记录100件成功的小事"
-          >
-            <Sparkles className="w-4 h-4" />
-            <span className="text-sm">我的成功</span>
-          </button>
+          {/* 周视图 */}
+          <div className="flex-1 overflow-x-auto">
+            <div className="flex space-x-2">
+              {weekDates.map((date) => (
+                <button
+                  key={date.toISOString()}
+                  onClick={() => setSelectedDate(date)}
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all
+                    ${date.toDateString() === selectedDate.toDateString() 
+                      ? 'bg-primary text-white shadow-md' 
+                      : 'text-gray-500 hover:bg-primary/10'}`}
+                >
+                  {format(date, 'd')}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
-      </div>
+      </header>
 
       {/* 日记列表区域 */}
       <div className="flex-1 px-6 py-4 space-y-6 pb-32">
