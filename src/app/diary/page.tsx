@@ -173,6 +173,13 @@ export default function DiaryPage() {
               <span>AI助手</span>
             </button>
             <button
+              onClick={() => router.push('/milestone')}
+              className="flex items-center gap-1 px-3 py-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors"
+            >
+              <CalendarDays className="w-4 h-4" />
+              <span>画廊</span>
+            </button>
+            <button
               onClick={() => router.push('/onboarding/events')}
               className="flex items-center gap-1 px-3 py-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors"
             >
